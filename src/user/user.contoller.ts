@@ -2,8 +2,15 @@
 import {
   Controller,
   Post,
-  UploadedFile,
+  Get,
   Body,
+  Param,
+  Patch,
+  Put,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+  UploadedFile,
   UseInterceptors,
   BadRequestException,
 } from '@nestjs/common';
@@ -16,7 +23,7 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('register')
+   @Post('register')
   @UseInterceptors(
     FileInterceptor('nid_image', {
       storage: diskStorage({
@@ -25,7 +32,7 @@ export class UserController {
           cb(null, `${Date.now()}-${file.originalname}`);
         },
       }),
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+      limits: { fileSize: 2 * 1024 * 1024 },
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           cb(new BadRequestException('Only image files are allowed!'), false);
@@ -40,9 +47,36 @@ export class UserController {
     @UploadedFile() nid_image: Express.Multer.File,
   ) {
     if (!nid_image) {
-      throw new BadRequestException('NID image is required and must be under 2MB');
+      throw new BadRequestException(
+        'NID image is required and must be under 2MB',
+      );
     }
 
     return this.userService.registerUser(dto, nid_image);
+  }
+
+  @Post('login')
+  login(@Body() dto: { email: string; password: string }) {
+    return this.userService.login(dto);
+  }
+
+   @Patch(':id/phone')
+  updatePhone(@Param('id', ParseIntPipe) id: number, @Body('phone') phone: number) {
+    return this.userService.updatePhone(id, phone);
+  }
+
+  @Get('null-names')
+  findNullFullNames() {
+    return this.userService.findNullFullNames();
+  }
+
+  @Delete(':id')
+  deleteUser(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.deleteUser(id);
+  }
+
+  @Get()
+  findAll() {
+    return this.userService.findAll();
   }
 }

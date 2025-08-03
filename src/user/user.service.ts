@@ -1,78 +1,97 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+// src/users/user.service.ts
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { User } from './user.entity';
 import { CreateUserDto } from './dto/user.dto';
+import * as bcrypt from 'bcrypt';
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  nid: string;
-  nidImagePath?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 @Injectable()
 export class UserService {
-  private users: User[] = [];
-  private currentId = 1;
+  constructor(
+    @InjectRepository(User)
+    private readonly repo: Repository<User>,
+  ) {}
 
-  async registerUser(createUserDto: CreateUserDto, nidImage: Express.Multer.File): Promise<User> {
-    // Check if email already exists
-    const existingUser = this.users.find(user => user.email === createUserDto.email);
+  async registerUser(dto: CreateUserDto, nid_image: Express.Multer.File) {
+    const existingUser = await this.repo.findOne({ where: { email: dto.email } });
     if (existingUser) {
-      throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+      throw new UnauthorizedException('User already exists');
     }
 
-    // Check if NID already exists
-    const existingNID = this.users.find(user => user.nid === createUserDto.nid);
-    if (existingNID) {
-      throw new HttpException('NID number already exists', HttpStatus.CONFLICT);
-    }
-
-    const newUser: User = {
-      id: this.currentId++,
-      name: createUserDto.name,
-      email: createUserDto.email,
-      nid: createUserDto.nid,
-      nidImagePath: nidImage.path, // File path where image is stored
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    this.users.push(newUser);
-    
-    // Return user without sensitive data if needed
-    return newUser;
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const user = this.repo.create({
+      ...dto,
+      phone: Number(dto.phone),
+      nid: dto.nid ? Number(dto.nid) : null,
+      password: hashedPassword,
+      nidImagePath: nid_image.path,
+    });
+    return this.repo.save(user);
   }
 
-  async findAll(): Promise<User[]> {
-    return this.users;
+  async login(dto: { email: string; password: string }) {
+    const user = await this.repo.findOne({ where: { email: dto.email } });
+    if (!user) throw new UnauthorizedException('Invalid email');
+
+    const match = await bcrypt.compare(dto.password, user.password);
+    if (!match) throw new UnauthorizedException('Wrong password');
+
+    return { message: 'Login success', userId: user.id };
   }
 
-  async findOne(id: number): Promise<User | null> {
-    const user = this.users.find(user => user.id === id);
-    return user || null;
+  async getUserById(id: number) {
+    const user = await this.repo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    const user = this.users.find(user => user.email === email);
-    return user || null;
+  async getAllUsers() {
+    return this.repo.find();
   }
 
-  async findByNID(nid: string): Promise<User | null> {
-    const user = this.users.find(user => user.nid === nid);
-    return user || null;
+async updatePhone(id: number, phone: number) {
+  const user = await this.repo.findOne({ where: { id } });
+  if (!user) throw new NotFoundException('User not found');
+
+  user.phone = phone;
+
+  const updatedUser = await this.repo.save(user);
+  return {
+    message: 'Phone number updated successfully',
+    user: updatedUser,
+  };
+}
+  async updateUserFull(id: number, dto: Partial<User>) {
+    const user = await this.repo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    Object.assign(user, dto);
+    return this.repo.save(user);
   }
 
-  async getUserStats(): Promise<{ total: number; recentUsers: number }> {
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
-    const recentUsers = this.users.filter(user => user.createdAt >= oneWeekAgo).length;
-    
-    return {
-      total: this.users.length,
-      recentUsers,
-    };
+  async updateUserPartial(id: number, dto: Partial<User>) {
+    return this.updateUserFull(id, dto); // same logic
   }
+
+  async deleteUser(id: number) {
+    const result = await this.repo.delete(id);
+    if (result.affected === 0) throw new NotFoundException('User not found');
+    return { message: 'User deleted' };
+  }
+
+  async findNullFullNames() {
+    return this.repo.find({ where: { fullName: IsNull() } });
+  }
+
+  findAll() {
+  // Implementation to return all users
+  // Replace with your actual implementation
+  return this.repo.find();
+}
 }
