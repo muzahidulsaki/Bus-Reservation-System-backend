@@ -82,11 +82,16 @@ async updatePhone(id: number, phone: number) {
   async deleteUser(id: number) {
     const result = await this.repo.delete(id);
     if (result.affected === 0) throw new NotFoundException('User not found');
-    return { message: 'User deleted' };
+    return { message: 'User deleted successfully' };
   }
 
   async findNullFullNames() {
-    return this.repo.find({ where: { fullName: IsNull() } });
+    return this.repo.find({ where: 
+      [
+        { fullName: IsNull() } ,
+        { fullName: '' },
+      ],
+      });
   }
 
   findAll() {

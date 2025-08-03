@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 
 export class CreateUserDto {
+  @IsOptional()
   @IsString()
   // @Matches(/^[A-Za-z\s]+$/, {
   //   message: 'Name must contain only alphabets',
