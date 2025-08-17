@@ -54,19 +54,19 @@ export class CreateBusDto {
   @IsPositive({ message: 'Fare per seat must be positive' })
   farePerSeat: number;
 
-  @IsNotEmpty({ message: 'Driver name is required' })
+  @IsOptional()
   @IsString({ message: 'Driver name must be a string' })
   @Matches(/^[A-Za-z\s.]+$/, { message: 'Driver name should only contain alphabets, spaces and dots' })
   @Length(2, 50, { message: 'Driver name must be between 2 and 50 characters' })
   @Transform(({ value }) => value?.trim())
-  driverName: string;
+  driverName?: string;
 
-  @IsNotEmpty({ message: 'Driver phone is required' })
+  @IsOptional()
   @IsString({ message: 'Driver phone must be a string' })
   @Matches(/^(\+88)?01[3-9]\d{8}$/, { 
     message: 'Driver phone must be a valid Bangladesh mobile number' 
   })
-  driverPhone: string;
+  driverPhone?: string;
 
   @IsOptional()
   @IsIn(['active', 'inactive', 'maintenance'], {

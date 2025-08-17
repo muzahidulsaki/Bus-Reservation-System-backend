@@ -70,9 +70,22 @@ export class UserController {
     return this.userService.findNullFullNames();
   }
 
+  @Get(':id')
+  getUserById(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.getUserById(id);
+  }
+
   @Delete(':id')
   deleteUser(@Param('id', ParseIntPipe) id: number) {
     return this.userService.deleteUser(id);
+  }
+
+   @Patch(':id/status')
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('status') status: 'active' | 'inactive',
+  ) {
+    return this.userService.updateStatus(id, status);
   }
 
   @Get()

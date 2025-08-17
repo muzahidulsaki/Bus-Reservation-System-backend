@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
@@ -93,6 +94,23 @@ async updatePhone(id: number, phone: number) {
       ],
       });
   }
+
+  // src/users/user/user.service.ts
+
+async updateStatus(id: number, status: 'active' | 'inactive') {
+  const user = await this.repo.findOne({ where: { id } });
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  if (!['active', 'inactive'].includes(status)) {
+    throw new BadRequestException('Status must be either active or inactive');
+  }
+
+  user.status = status;
+  return this.repo.save(user);
+}
+
 
   findAll() {
   // Implementation to return all users

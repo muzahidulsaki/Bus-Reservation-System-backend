@@ -4,6 +4,8 @@ import {
   PrimaryColumn,
   Column,
   BeforeInsert,
+  OneToOne,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('users')
@@ -18,6 +20,9 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ type: 'enum', enum: ['active', 'inactive'], default: 'active' })
+status: 'active' | 'inactive';
 
   @Column({ nullable: true })
   fullName: string;
@@ -39,4 +44,12 @@ export class User {
 
   @Column({ nullable: true })
   nidImagePath: string;
+
+  // One-to-One relationship with Profile
+  @OneToOne('Profile', 'user')
+  profile: any;
+
+  // One-to-Many relationship with Booking
+  @OneToMany('Booking', 'user')
+  bookings: any[];
 }
