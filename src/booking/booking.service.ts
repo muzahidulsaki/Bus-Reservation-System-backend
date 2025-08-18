@@ -25,9 +25,10 @@ export class BookingService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
+      let bus = null;
       // Check if bus exists (if busId provided)
       if (createBookingDto.busId) {
-        const bus = await this.busRepository.findOne({ where: { id: createBookingDto.busId } });
+        bus = await this.busRepository.findOne({ where: { id: createBookingDto.busId } });
         if (!bus) {
           throw new HttpException('Bus not found', HttpStatus.NOT_FOUND);
         }

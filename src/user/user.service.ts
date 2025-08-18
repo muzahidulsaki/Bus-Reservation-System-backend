@@ -8,7 +8,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { User } from './user.entity';
-import { CreateUserDto } from './dto/user.dto';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcrypt';
 
 
@@ -17,6 +18,7 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly repo: Repository<User>,
+    private readonly mailService: MailService,
   ) {}
 
   async registerUser(dto: CreateUserDto, nid_image: Express.Multer.File) {
@@ -33,7 +35,24 @@ export class UserService {
       password: hashedPassword,
       nidImagePath: nid_image.path,
     });
-    return this.repo.save(user);
+    
+    const savedUser = await this.repo.save(user);
+    
+    // Send welcome email with new beautiful design
+    try {
+      const emailResult = await this.mailService.sendUserWelcomeEmail({
+        email: savedUser.email,
+        fullName: savedUser.fullName,
+        phone: savedUser.phone ? savedUser.phone.toString() : undefined,
+        gender: savedUser.gender,
+      });
+
+      console.log('User welcome email result:', emailResult);
+    } catch (error) {
+      console.error(`❌ Failed to send welcome email to ${savedUser.email}:`, error.message);
+    }
+    
+    return savedUser;
   }
 
   async login(dto: { email: string; password: string }) {
@@ -110,6 +129,59 @@ async updateStatus(id: number, status: 'active' | 'inactive') {
   user.status = status;
   return this.repo.save(user);
 }
+
+  // PUT method - Complete user profile update
+  async updateUser(id: number, updateDto: any) {
+    try {
+      // Check if user exists
+      const user = await this.repo.findOne({ where: { id } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Check if email is being updated and if it already exists
+      if (updateDto.email && updateDto.email !== user.email) {
+        const existingUser = await this.repo.findOne({ 
+          where: { email: updateDto.email } 
+        });
+        if (existingUser) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      // Hash password if it's being updated
+      if (updateDto.password) {
+        updateDto.password = await bcrypt.hash(updateDto.password, 10);
+      }
+
+      // Convert phone to number if provided
+      if (updateDto.phone) {
+        updateDto.phone = Number(updateDto.phone);
+      }
+
+      // Convert nid to number if provided
+      if (updateDto.nid) {
+        updateDto.nid = Number(updateDto.nid);
+      }
+
+      // Update user with new data
+      Object.assign(user, updateDto);
+      const updatedUser = await this.repo.save(user);
+
+      // Remove password from response
+      const { password, ...result } = updatedUser;
+      
+      return {
+        message: 'User profile updated successfully',
+        data: result,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to update user profile');
+    }
+  }
 
 
   findAll() {
