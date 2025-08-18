@@ -8,6 +8,7 @@ import { BusOwnerModule } from './bus_owner/bus_owner.module';
 import { BusModule } from './bus/bus.module';
 import { ProfileModule } from './profile/profile.module';
 import { BookingModule } from './booking/booking.module';
+import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
@@ -21,6 +22,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     BusModule,
     ProfileModule,
     BookingModule,
+    AuthModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,

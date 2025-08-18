@@ -11,11 +11,14 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { CreateProfileDto, UpdateProfileDto, ProfileResponseDto } from './dto/profile.dto';
+import { AuthGuard } from '../auth/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard) // All routes protected
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}

@@ -1,6 +1,7 @@
 // src/users/dto/create-user.dto.ts
 import {
   IsEmail,
+  IsEnum,
   Matches,
   IsNotEmpty,
   IsString,
@@ -48,4 +49,8 @@ export class CreateUserDto {
     message: 'NID must be between 10 to 17 digits',
   })
   nid?: string;
+
+  @IsEnum(['user', 'admin', 'bus_owner'])
+  @IsOptional() // optional since you already have default in entity
+  role?: 'user' | 'admin' | 'bus_owner';
 }

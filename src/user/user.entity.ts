@@ -45,6 +45,9 @@ status: 'active' | 'inactive';
   @Column({ nullable: true })
   nidImagePath: string;
 
+  @Column({ type: 'enum', enum: ['user', 'admin', 'bus_owner'], default: 'user' })
+  role: string;
+
   // One-to-One relationship with Profile
   @OneToOne('Profile', 'user')
   profile: any;

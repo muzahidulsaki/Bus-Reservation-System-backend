@@ -12,11 +12,14 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto, UpdateBookingDto, BookingResponseDto } from './dto/booking.dto';
+import { AuthGuard } from '../auth/guards/auth.guard';
 
 @Controller()
+@UseGuards(AuthGuard) // All routes protected
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
