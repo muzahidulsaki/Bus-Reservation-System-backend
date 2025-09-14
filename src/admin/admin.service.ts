@@ -9,6 +9,7 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { FilterAdminDto } from './dto/filter-admin.dto';
 import { AdminRegisterDto } from './dto/admin-register.dto';
 import { MailService } from '../mail/mail.service';
+import { PusherService } from '../pusher/pusher.service';
 import * as bcrypt from 'bcrypt';
  
 @Injectable()
@@ -21,6 +22,7 @@ export class AdminService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly mailService: MailService,
+    private readonly pusherService: PusherService,
   ) {}
  
   async registerAdmin(dto: AdminRegisterDto) {
@@ -402,8 +404,37 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
+    const previousStatus = user.status;
     user.status = status;
     await this.userRepository.save(user);
+
+    // Send real-time notification for user status change
+    await this.pusherService.triggerAdminNotification(
+      `User status updated: ${user.fullName} is now ${status}`,
+      {
+        userId: user.id,
+        userName: user.fullName,
+        previousStatus,
+        newStatus: status,
+        updatedAt: new Date().toISOString(),
+        type: 'user-status-change'
+      }
+    );
+
+    // Send notification to the specific user
+    await this.pusherService.triggerUserNotification(
+      userId,
+      status === 'active' 
+        ? 'Your account has been activated by admin' 
+        : 'Your account has been deactivated by admin',
+      { status, updatedAt: new Date().toISOString() }
+    );
+
+    // Send system notification
+    await this.pusherService.triggerSystemNotification(
+      `User ${user.fullName} status changed from ${previousStatus} to ${status}`,
+      status === 'active' ? 'info' : 'warning'
+    );
 
     return {
       message: `User status updated to ${status}`,
@@ -413,5 +444,53 @@ export class AdminService {
         status: user.status,
       },
     };
+  }
+
+  // Real-time Admin-specific methods
+  async broadcastToAllAdmins(message: string, data?: any) {
+    await this.pusherService.triggerAdminNotification(message, {
+      ...data,
+      broadcast: true,
+      timestamp: new Date().toISOString(),
+      type: 'admin-broadcast'
+    });
+  }
+
+  async notifyAdminsAboutNewUser(userData: any) {
+    await this.pusherService.triggerAdminNotification(
+      `New user registered: ${userData.fullName}`,
+      {
+        userId: userData.id,
+        userName: userData.fullName,
+        email: userData.email,
+        phone: userData.phone,
+        registrationTime: new Date().toISOString(),
+        type: 'new-user-registration'
+      }
+    );
+  }
+
+  async notifyAdminsAboutBooking(bookingData: any) {
+    await this.pusherService.triggerAdminNotification(
+      `New booking created by ${bookingData.userName}`,
+      {
+        bookingId: bookingData.id,
+        userName: bookingData.userName,
+        route: bookingData.route,
+        bookingTime: new Date().toISOString(),
+        type: 'new-booking'
+      }
+    );
+  }
+
+  async sendDashboardUpdate() {
+    const stats = await this.getAdminDashboardStats();
+    
+    // Send to all admin dashboards
+    await this.pusherService.trigger('admin-dashboards', 'stats-update', {
+      message: 'Dashboard statistics updated',
+      data: stats,
+      timestamp: new Date().toISOString(),
+    });
   }
 }

@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { MailModule } from './mail/mail.module';
+import { PusherModule } from './pusher/pusher.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MailModule } from './mail/mail.module';
     BookingModule,
     AuthModule,
     MailModule,
+    PusherModule,
 
     // Database config
     TypeOrmModule.forRoot({

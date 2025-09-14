@@ -28,6 +28,7 @@ import { UserService } from './user.service';
 import { AuthService } from '../auth/auth.service';
 import { LoginDto } from '../auth/dto/auth.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { PusherService } from '../pusher/pusher.service';
 import { AdminGuard } from '../auth/guards/admin.guard';
 
 @Controller('user')
@@ -36,6 +37,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly authService: AuthService,
+    private readonly pusherService: PusherService,
   ) {}
 
    @Post('register')
@@ -73,6 +75,30 @@ export class UserController {
       console.log('Uploaded File:', nid_image);
 
       const result = await this.userService.registerUser(dto, nid_image);
+      
+      // 🚀 Trigger real-time events for user registration
+      try {
+        await this.pusherService.triggerUserRegistered({
+          id: result.data.id,
+          fullName: result.data.fullName,
+          email: result.data.email,
+          registrationDate: new Date().toISOString()
+        });
+        
+        await this.pusherService.triggerAdminNotification(
+          `New user registered: ${result.data.fullName}`,
+          {
+            userId: result.data.id,
+            userEmail: result.data.email,
+            userPhone: result.data.phone
+          }
+        );
+        
+        console.log('✅ User registration events triggered');
+      } catch (pusherError) {
+        console.error('❌ Pusher event error:', pusherError);
+        // Don't fail registration if pusher fails
+      }
       
       // ✅ Ensure response is properly structured
       return {
@@ -317,6 +343,25 @@ export class UserController {
         ...req.session.user,
         ...updatedUser
       };
+      
+      // 🚀 Trigger real-time events for profile update
+      try {
+        await this.pusherService.triggerUserProfileUpdated(updatedUser);
+        
+        await this.pusherService.triggerUserNotification(
+          userId,
+          'Profile updated successfully!',
+          {
+            updatedFields: Object.keys(updateData),
+            timestamp: new Date().toISOString()
+          }
+        );
+        
+        console.log('✅ Profile update events triggered');
+      } catch (pusherError) {
+        console.error('❌ Pusher event error:', pusherError);
+        // Don't fail update if pusher fails
+      }
       
       console.log('✅ Profile updated successfully:', updatedUser);
       

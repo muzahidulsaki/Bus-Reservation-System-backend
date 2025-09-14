@@ -26,12 +26,14 @@ import { AdminRegisterDto } from './dto/admin-register.dto';
 import { AdminService } from './admin.service';
 import { AdminAuthService } from './auth/admin-auth.service';
 import { AdminSessionGuard } from './guards/admin-session.guard';
+import { PusherService } from '../pusher/pusher.service';
  
 @Controller('admin')
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly adminAuthService: AdminAuthService,
+    private readonly pusherService: PusherService,
   ) {}
  
   
@@ -49,6 +51,24 @@ export class AdminController {
       
       // Store admin in session
       session.user = admin;
+      
+      // Send real-time notification for admin login
+      await this.pusherService.triggerAdminNotification(
+        `Admin ${admin.fullName} has logged in`,
+        {
+          adminId: admin.id,
+          adminName: admin.fullName,
+          loginTime: new Date().toISOString(),
+          position: admin.position,
+          type: 'admin-login'
+        }
+      );
+
+      // Send system notification 
+      await this.pusherService.triggerSystemNotification(
+        `Admin login: ${admin.fullName} from ${admin.position}`,
+        'info'
+      );
       
       console.log('✅ Admin login successful:', admin.fullName);
       
@@ -83,6 +103,25 @@ export class AdminController {
       
       const admin = await this.adminService.registerAdmin(registerDto);
       
+      // Send real-time notification for new admin registration
+      await this.pusherService.triggerAdminNotification(
+        `New admin registered: ${admin.fullName}`,
+        {
+          adminId: admin.id,
+          adminName: admin.fullName,
+          email: admin.email,
+          position: admin.position,
+          registrationTime: new Date().toISOString(),
+          type: 'admin-registration'
+        }
+      );
+
+      // Send system notification
+      await this.pusherService.triggerSystemNotification(
+        `New admin account created: ${admin.fullName} (${admin.position})`,
+        'info'
+      );
+      
       console.log('✅ Admin registration successful:', admin.fullName);
       
       return {
@@ -111,7 +150,29 @@ export class AdminController {
   @Post('logout')
   async logout(@Session() session: Record<string, any>) {
     try {
-      const adminEmail = session.user?.email;
+      const admin = session.user;
+      const adminEmail = admin?.email;
+      const adminName = admin?.fullName;
+      
+      // Send real-time notification for admin logout
+      if (admin) {
+        await this.pusherService.triggerAdminNotification(
+          `Admin ${adminName} has logged out`,
+          {
+            adminId: admin.id,
+            adminName: adminName,
+            logoutTime: new Date().toISOString(),
+            position: admin.position,
+            type: 'admin-logout'
+          }
+        );
+
+        // Send system notification
+        await this.pusherService.triggerSystemNotification(
+          `Admin logout: ${adminName} from ${admin.position}`,
+          'info'
+        );
+      }
       
       session.destroy((err) => {
         if (err) {
@@ -160,6 +221,25 @@ export class AdminController {
     try {
       // Get admin details and statistics
       const adminStats = await this.adminService.getAdminDashboardStats();
+      
+      // Send real-time dashboard access notification
+      await this.pusherService.triggerAdminNotification(
+        `Admin ${session.user.fullName} accessed dashboard`,
+        {
+          adminId: session.user.id,
+          adminName: session.user.fullName,
+          accessTime: new Date().toISOString(),
+          type: 'dashboard-access',
+          stats: adminStats
+        }
+      );
+
+      // Send dashboard data to admin-specific channel for real-time updates
+      await this.pusherService.trigger(`admin-dashboard-${session.user.id}`, 'dashboard-update', {
+        message: 'Dashboard data updated',
+        data: adminStats,
+        timestamp: new Date().toISOString(),
+      });
       
       return {
         message: 'Admin dashboard data retrieved successfully',
@@ -333,5 +413,99 @@ export class AdminController {
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteAdmin(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deleteAdmin(id);
+  }
+
+  // ============ ADMIN PUSHER REAL-TIME METHODS ============
+  
+  @Post('broadcast')
+  @UseGuards(AdminSessionGuard)
+  async broadcastToAllAdmins(
+    @Body() broadcastDto: { message: string; data?: any },
+    @Session() session: Record<string, any>
+  ) {
+    await this.adminService.broadcastToAllAdmins(
+      broadcastDto.message,
+      {
+        ...broadcastDto.data,
+        broadcastBy: session.user.fullName,
+        broadcastById: session.user.id,
+      }
+    );
+
+    return {
+      message: 'Broadcast sent to all admins successfully',
+      sentBy: session.user.fullName,
+      sentAt: new Date().toISOString(),
+    };
+  }
+
+  @Post('test-admin-pusher')
+  @UseGuards(AdminSessionGuard)
+  async testAdminPusher(@Session() session: Record<string, any>) {
+    // Test admin-specific notifications
+    await this.pusherService.triggerAdminNotification(
+      `Test notification from ${session.user.fullName}`,
+      {
+        testType: 'admin-pusher-test',
+        adminId: session.user.id,
+        adminName: session.user.fullName,
+        timestamp: new Date().toISOString(),
+      }
+    );
+
+    // Test dashboard update
+    await this.adminService.sendDashboardUpdate();
+
+    // Test system notification
+    await this.pusherService.triggerSystemNotification(
+      `Admin Pusher test completed by ${session.user.fullName}`,
+      'info'
+    );
+
+    return {
+      message: 'Admin Pusher test completed successfully',
+      events: [
+        'admin-notification sent',
+        'dashboard-update sent',
+        'system-notification sent'
+      ],
+      testedBy: session.user.fullName,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post('refresh-dashboard')
+  @UseGuards(AdminSessionGuard)
+  async refreshDashboard() {
+    await this.adminService.sendDashboardUpdate();
+    
+    return {
+      message: 'Dashboard refresh broadcast sent to all admins',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post('user/:userId/notify')
+  @UseGuards(AdminSessionGuard)
+  async notifyUser(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() notificationDto: { message: string; data?: any },
+    @Session() session: Record<string, any>
+  ) {
+    await this.pusherService.triggerUserNotification(
+      userId,
+      notificationDto.message,
+      {
+        ...notificationDto.data,
+        sentByAdmin: session.user.fullName,
+        sentAt: new Date().toISOString(),
+      }
+    );
+
+    return {
+      message: `Notification sent to user ${userId}`,
+      sentBy: session.user.fullName,
+      timestamp: new Date().toISOString(),
+    };
   }
 }

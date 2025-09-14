@@ -10,11 +10,13 @@ import { Admin } from './admin.entity';
 import { Department } from './entities/department.entity';
 import { User } from '../user/user.entity';
 import { MailModule } from '../mail/mail.module';
+import { PusherModule } from '../pusher/pusher.module';
  
 @Module({
   imports: [
     TypeOrmModule.forFeature([Admin, Department, User]),
     MailModule,
+    PusherModule,
   ],
   controllers: [AdminController, DepartmentController],
   providers: [AdminService, DepartmentService, AdminAuthService, AdminSessionGuard],

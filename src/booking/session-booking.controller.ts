@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from './booking.entity';
 import { User } from '../user/user.entity';
+import { PusherService } from '../pusher/pusher.service';
 
 @Controller('booking')
 export class SessionBookingController {
@@ -13,6 +14,7 @@ export class SessionBookingController {
     private bookingRepository: Repository<Booking>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private pusherService: PusherService,
   ) {}
   
   @Post('create')
@@ -56,6 +58,47 @@ export class SessionBookingController {
       const savedBooking = await this.bookingRepository.save(booking);
       
       console.log('New Booking Created:', savedBooking);
+      
+      // 🚀 Trigger real-time events
+      try {
+        // Notify user about successful booking
+        await this.pusherService.triggerUserNotification(
+          user.id,
+          'Booking confirmed successfully!',
+          {
+            ticketNumber: savedBooking.bookingReference,
+            seatNumbers: savedBooking.seatNumbers,
+            totalFare: savedBooking.totalFare
+          }
+        );
+        
+        // Trigger general booking created event
+        await this.pusherService.triggerBookingCreated({
+          id: savedBooking.id,
+          ticketNumber: savedBooking.bookingReference,
+          passengerName: savedBooking.passengerName,
+          seatNumbers: savedBooking.seatNumbers,
+          totalFare: savedBooking.totalFare,
+          travelDate: savedBooking.travelDate,
+          userId: user.id
+        });
+        
+        // Notify admin about new booking
+        await this.pusherService.triggerAdminNotification(
+          `New booking created by ${user.fullName}`,
+          {
+            bookingId: savedBooking.id,
+            ticketNumber: savedBooking.bookingReference,
+            userName: user.fullName,
+            userEmail: user.email
+          }
+        );
+        
+        console.log('✅ Real-time events triggered successfully');
+      } catch (pusherError) {
+        console.error('❌ Pusher event error:', pusherError);
+        // Don't fail booking if pusher fails
+      }
       
       return {
         success: true,

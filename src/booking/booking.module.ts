@@ -6,9 +6,13 @@ import { SessionBookingController } from './session-booking.controller';
 import { Booking } from './booking.entity';
 import { User } from '../user/user.entity';
 import { Bus } from '../bus/bus.entity';
+import { PusherModule } from '../pusher/pusher.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Booking, User, Bus])],
+  imports: [
+    TypeOrmModule.forFeature([Booking, User, Bus]),
+    PusherModule
+  ],
   controllers: [BookingController, SessionBookingController],
   providers: [BookingService],
   exports: [BookingService],
