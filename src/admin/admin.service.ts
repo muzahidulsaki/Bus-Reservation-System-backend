@@ -42,9 +42,9 @@ export class AdminService {
       email: dto.email,
       password: hashedPassword,
       phone: dto.phone,
-      position: dto.counterLocation, // Use counterLocation as position
-      age: 25, // Default age
-      gender: 'male', // Default gender
+      position: dto.counterLocation, 
+      age: 25, 
+      gender: 'male', 
       status: 'active',
     });
     
