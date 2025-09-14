@@ -34,7 +34,7 @@ export class AdminController {
     private readonly adminAuthService: AdminAuthService,
   ) {}
  
-  // ============ AUTH ROUTES (No Session Required) ============
+  
 
   @Post('login')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
