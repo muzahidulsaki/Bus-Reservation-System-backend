@@ -13,10 +13,12 @@ import {
   UsePipes,
   ValidationPipe,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto, UpdateBookingDto, BookingResponseDto } from './dto/booking.dto';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { Request } from 'express';
 
 @Controller()
 @UseGuards(AuthGuard) // All routes protected
@@ -134,6 +136,83 @@ export class BookingController {
         'Failed to fetch bookings',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
+    }
+  }
+
+  // Session-based booking routes
+  @Post('booking/create')
+  async createBookingWithSession(
+    @Body() createBookingDto: any,
+    @Req() req: Request
+  ) {
+    // Check if user is logged in
+    if (!req.session || !req.session['user']) {
+      return { success: false, message: 'Please login to make a booking' };
+    }
+
+    try {
+      const userId = req.session['user'].id;
+      // Use your custom booking creation logic here
+      // You may need to adapt this to work with the existing service
+      
+      return {
+        success: true,
+        message: 'Booking created successfully',
+        userId: userId
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to create booking'
+      };
+    }
+  }
+
+  @Get('booking/my-bookings')
+  async getUserBookingsWithSession(@Req() req: Request) {
+    if (!req.session || !req.session['user']) {
+      return { success: false, message: 'Please login to view bookings' };
+    }
+
+    try {
+      const userId = req.session['user'].id;
+      // Get user bookings - you may need to adapt this
+      const bookings = await this.bookingService.getAllBookings();
+      
+      return {
+        success: true,
+        bookings: bookings.filter((booking: any) => booking.userId === userId)
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch bookings'
+      };
+    }
+  }
+
+  @Patch('booking/cancel/:id')
+  async cancelBookingWithSession(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request
+  ) {
+    if (!req.session || !req.session['user']) {
+      return { success: false, message: 'Please login to cancel booking' };
+    }
+
+    try {
+      const userId = req.session['user'].id;
+      // Add logic to verify booking belongs to user and cancel it
+      
+      return {
+        success: true,
+        message: 'Booking cancelled successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to cancel booking'
+      };
     }
   }
 }

@@ -6,6 +6,14 @@ import * as session from 'express-session';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
+  // ✅ CORS Configuration
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:4000', 'http://localhost:5000'], // Add your frontend ports
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  });
+  
   // Session Configuration
   app.use(
     session({
@@ -16,6 +24,7 @@ async function bootstrap() {
         maxAge: 1000 * 60 * 60 * 24, // 24 hours
         httpOnly: true,
         secure: false, // Set to true in production with HTTPS
+        sameSite: 'lax', // Important for cross-origin requests
       },
     }),
   );
@@ -31,7 +40,7 @@ async function bootstrap() {
     })
   );
   
-  await app.listen(3000);
-  console.log('🚌 Bus Reservation System running on http://localhost:3000');
+  await app.listen(8080);
+  console.log('🚌 Bus Reservation System running on http://localhost:8080');
 }
 bootstrap();

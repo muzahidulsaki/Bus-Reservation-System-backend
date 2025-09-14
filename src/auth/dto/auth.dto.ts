@@ -16,4 +16,5 @@ export interface SessionUser {
   email: string;
   fullName: string;
   role: string;
+  status: string;
 }

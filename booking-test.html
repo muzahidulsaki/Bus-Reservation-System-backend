@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Booking System Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .button.secondary {
+            background: #6c757d;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .seat-selection {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .seat {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .seat.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .booking-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .booking-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status.confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚌 Bus Booking System Test</h1>
+            <p>Complete booking system with database integration</p>
+        </div>
+        
+        <div class="content">
+            <!-- Account Section -->
+            <div class="section">
+                <h3>1. Account Management</h3>
+                <div id="authButtons">
+                    <button class="button" onclick="showRegister()">Register New User</button>
+                    <button class="button" onclick="showLogin()">Login</button>
+                    <button class="button secondary" onclick="checkSession()">Check Session</button>
+                    <button class="button secondary" onclick="logout()">Logout</button>
+                </div>
+                
+                <!-- Register Form -->
+                <div id="registerForm" class="hidden">
+                    <h4>Register New User</h4>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label>Name:</label>
+                            <input type="text" id="regName" placeholder="Full name" value="Test User">
+                        </div>
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <input type="email" id="regEmail" placeholder="Email address" value="test@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Password:</label>
+                            <input type="password" id="regPassword" placeholder="Password" value="123456">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone:</label>
+                            <input type="text" id="regPhone" placeholder="Phone number" value="01700000000">
+                        </div>
+                    </div>
+                    <button class="button" onclick="register()">Register</button>
+                    <button class="button secondary" onclick="hideAuth()">Cancel</button>
+                </div>
+                
+                <!-- Login Form -->
+                <div id="loginForm" class="hidden">
+                    <h4>Login</h4>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <input type="email" id="loginEmail" placeholder="Email" value="test@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Password:</label>
+                            <input type="password" id="loginPassword" placeholder="Password" value="123456">
+                        </div>
+                    </div>
+                    <button class="button" onclick="login()">Login</button>
+                    <button class="button secondary" onclick="hideAuth()">Cancel</button>
+                </div>
+            </div>
+            
+            <!-- Booking Section -->
+            <div class="section">
+                <h3>2. Create Booking</h3>
+                
+                <!-- Quick Routes -->
+                <div style="margin-bottom: 20px;">
+                    <h4>Popular Routes:</h4>
+                    <button class="button secondary" onclick="selectRoute('Dhaka', 'Chittagong', 600)">Dhaka → Chittagong (৳600)</button>
+                    <button class="button secondary" onclick="selectRoute('Dhaka', 'Sylhet', 500)">Dhaka → Sylhet (৳500)</button>
+                    <button class="button secondary" onclick="selectRoute('Dhaka', 'Rajshahi', 450)">Dhaka → Rajshahi (৳450)</button>
+                </div>
+                
+                <!-- Booking Form -->
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Passenger Name:</label>
+                        <input type="text" id="bookingName" placeholder="Passenger name" value="Test Passenger">
+                    </div>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" id="bookingEmail" placeholder="Contact email" value="test@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone:</label>
+                        <input type="text" id="bookingPhone" placeholder="Phone number" value="01700000000">
+                    </div>
+                    <div class="form-group">
+                        <label>From:</label>
+                        <input type="text" id="bookingFrom" placeholder="Departure city" value="Dhaka">
+                    </div>
+                    <div class="form-group">
+                        <label>To:</label>
+                        <input type="text" id="bookingTo" placeholder="Destination city" value="Chittagong">
+                    </div>
+                    <div class="form-group">
+                        <label>Date:</label>
+                        <input type="date" id="bookingDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Time:</label>
+                        <select id="bookingTime">
+                            <option value="06:00">06:00 AM</option>
+                            <option value="08:00" selected>08:00 AM</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="14:00">02:00 PM</option>
+                            <option value="18:00">06:00 PM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Price per seat:</label>
+                        <input type="number" id="pricePerSeat" placeholder="Price per seat" value="600">
+                    </div>
+                </div>
+                
+                <!-- Seat Selection -->
+                <div class="form-group">
+                    <label>Select Seats:</label>
+                    <div class="seat-selection" id="seatSelection">
+                        <!-- Seats will be generated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <strong>Selected Seats: <span id="selectedSeats">None</span></strong><br>
+                    <strong>Total Price: ৳<span id="totalPrice">0</span></strong>
+                </div>
+                
+                <button class="button" onclick="createBooking()">Book Tickets</button>
+            </div>
+            
+            <!-- My Bookings Section -->
+            <div class="section">
+                <h3>3. My Bookings</h3>
+                <button class="button" onclick="getMyBookings()">Load My Bookings</button>
+                <div id="bookingsList"></div>
+            </div>
+            
+            <!-- Results -->
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize
+        let selectedSeatsList = [];
+        const API_BASE = 'http://localhost:8080';
+
+        // Generate seats
+        function generateSeats() {
+            const seatSelection = document.getElementById('seatSelection');
+            const seats = ['A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4', 'C1', 'C2', 'C3', 'C4'];
+            
+            seatSelection.innerHTML = '';
+            seats.forEach(seat => {
+                const seatDiv = document.createElement('div');
+                seatDiv.className = 'seat';
+                seatDiv.textContent = seat;
+                seatDiv.onclick = () => toggleSeat(seat, seatDiv);
+                seatSelection.appendChild(seatDiv);
+            });
+        }
+
+        // Toggle seat selection
+        function toggleSeat(seatNumber, seatElement) {
+            if (selectedSeatsList.includes(seatNumber)) {
+                selectedSeatsList = selectedSeatsList.filter(s => s !== seatNumber);
+                seatElement.classList.remove('selected');
+            } else {
+                selectedSeatsList.push(seatNumber);
+                seatElement.classList.add('selected');
+            }
+            updateTotalPrice();
+        }
+
+        // Update total price
+        function updateTotalPrice() {
+            const pricePerSeat = parseInt(document.getElementById('pricePerSeat').value) || 0;
+            const totalPrice = selectedSeatsList.length * pricePerSeat;
+            document.getElementById('selectedSeats').textContent = selectedSeatsList.join(', ') || 'None';
+            document.getElementById('totalPrice').textContent = totalPrice;
+        }
+
+        // Select popular route
+        function selectRoute(from, to, price) {
+            document.getElementById('bookingFrom').value = from;
+            document.getElementById('bookingTo').value = to;
+            document.getElementById('pricePerSeat').value = price;
+            updateTotalPrice();
+        }
+
+        // Show/hide auth forms
+        function showLogin() {
+            hideAuth();
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+
+        function showRegister() {
+            hideAuth();
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        function hideAuth() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        // Display results
+        function showResult(message, isError = false) {
+            const results = document.getElementById('results');
+            results.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${message}</div>`;
+            setTimeout(() => results.innerHTML = '', 8000);
+        }
+
+        // API calls
+        async function register() {
+            const data = {
+                name: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value,
+                password: document.getElementById('regPassword').value,
+                phone: document.getElementById('regPhone').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/user/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showResult('✅ Registration successful! You can now login.');
+                    hideAuth();
+                } else {
+                    showResult(`❌ Registration failed: ${result.message}`, true);
+                }
+            } catch (error) {
+                showResult('❌ Network error occurred during registration', true);
+            }
+        }
+
+        async function login() {
+            const data = {
+                email: document.getElementById('loginEmail').value,
+                password: document.getElementById('loginPassword').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/user/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showResult(`✅ Login successful! Welcome ${result.user.name}`);
+                    hideAuth();
+                } else {
+                    showResult(`❌ Login failed: ${result.message}`, true);
+                }
+            } catch (error) {
+                showResult('❌ Network error occurred during login', true);
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch(`${API_BASE}/user/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showResult('✅ Logged out successfully');
+                } else {
+                    showResult('❌ Logout failed', true);
+                }
+            } catch (error) {
+                showResult('❌ Network error occurred during logout', true);
+            }
+        }
+
+        async function checkSession() {
+            try {
+                const response = await fetch(`${API_BASE}/user/check-session`, {
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showResult(`✅ Session active: ${result.user.name} (${result.user.email})`);
+                } else {
+                    showResult('❌ No active session. Please login first.', true);
+                }
+            } catch (error) {
+                showResult('❌ Network error occurred', true);
+            }
+        }
+
+        async function createBooking() {
+            if (selectedSeatsList.length === 0) {
+                showResult('❌ Please select at least one seat', true);
+                return;
+            }
+
+            const data = {
+                name: document.getElementById('bookingName').value,
+                email: document.getElementById('bookingEmail').value,
+                phone: document.getElementById('bookingPhone').value,
+                from: document.getElementById('bookingFrom').value,
+                to: document.getElementById('bookingTo').value,
+                date: document.getElementById('bookingDate').value,
+                time: document.getElementById('bookingTime').value,
+                seatNumbers: selectedSeatsList,
+                totalPrice: selectedSeatsList.length * parseInt(document.getElementById('pricePerSeat').value)
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/booking/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showResult(`🎉 Booking successful!<br>
+                        📋 Ticket Number: <strong>${result.ticketNumber}</strong><br>
+                        💺 Seats: ${result.seatNumbers.join(', ')}<br>
+                        💰 Total: ৳${result.totalPrice}`);
+                    
+                    // Reset form
+                    selectedSeatsList = [];
+                    generateSeats();
+                    updateTotalPrice();
+                } else {
+                    showResult(`❌ Booking failed: ${result.message}`, true);
+                }
+            } catch (error) {
+                showResult('❌ Network error occurred during booking', true);
+            }
+        }
+
+        async function getMyBookings() {
+            try {
+                const response = await fetch(`${API_BASE}/booking/my-bookings`, {
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    displayBookings(result.bookings, result.total);
+                } else {
+                    showResult(`❌ Failed to fetch bookings: ${result.message}`, true);
+                }
+            } catch (error) {
+                showResult('❌ Network error occurred while fetching bookings', true);
+            }
+        }
+
+        function displayBookings(bookings, total) {
+            const bookingsList = document.getElementById('bookingsList');
+            
+            if (bookings.length === 0) {
+                bookingsList.innerHTML = '<div class="booking-list"><p>No bookings found.</p></div>';
+                return;
+            }
+
+            let html = `<div class="booking-list">
+                <h4>Found ${total} booking(s)</h4>`;
+
+            bookings.forEach(booking => {
+                html += `
+                <div class="booking-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>Ticket: ${booking.ticketNumber}</strong>
+                            <span class="status ${booking.status}">${booking.status.toUpperCase()}</span>
+                        </div>
+                        <div>৳${booking.totalFare}</div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <div><strong>Passenger:</strong> ${booking.passengerName}</div>
+                        <div><strong>Phone:</strong> ${booking.passengerPhone}</div>
+                        <div><strong>Travel Date:</strong> ${new Date(booking.travelDate).toLocaleDateString()}</div>
+                        <div><strong>Seats:</strong> ${booking.seatNumbers.join(', ')} (${booking.numberOfSeats} seats)</div>
+                        <div><strong>Payment:</strong> ${booking.paymentStatus} (${booking.paymentMethod})</div>
+                        ${booking.notes ? `<div><strong>Notes:</strong> ${booking.notes}</div>` : ''}
+                    </div>
+                </div>`;
+            });
+
+            html += '</div>';
+            bookingsList.innerHTML = html;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            generateSeats();
+            // Set default date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('bookingDate').value = tomorrow.toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>

@@ -11,11 +11,11 @@ import {
 } from 'class-validator';
 
 export class CreateUserDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  // @Matches(/^[A-Za-z\s]+$/, {
-  //   message: 'Name must contain only alphabets',
-  // })
+  @Matches(/^[A-Za-z\s]+$/, {
+    message: 'Name must contain only alphabets',
+  })
   fullName: string;
 
   @IsEmail({}, { message: 'Must be a valid email' })
@@ -31,24 +31,27 @@ export class CreateUserDto {
   })
   password: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @Matches(/^(male|female)$/, {
     message: 'Gender must be either male or female',
   })
-  gender?: string;
+  gender: string;
+
+ @IsNotEmpty()
+@IsNumberString()
+@Matches(/^01[0-9]{9}$/)
+phone: string;
+
+ @IsNotEmpty()
+@IsNumberString()
+@Matches(/^\d{10,17}$/, {
+  message: 'NID must be between 10 to 17 digits',
+})
+nid: string;
 
   @IsNotEmpty()
-  @Matches(/^01[0-9]{9}$/, {
-    message: 'Phone number must be a valid Bangladeshi number',
-  })
-  phone: string;
-
-  @IsOptional()
-  @IsNumberString()
-  @Matches(/^\d{10,17}$/, {
-    message: 'NID must be between 10 to 17 digits',
-  })
-  nid?: string;
+@IsNumberString()
+age: string;
 
   @IsEnum(['user', 'admin', 'bus_owner'])
   @IsOptional() // optional since you already have default in entity

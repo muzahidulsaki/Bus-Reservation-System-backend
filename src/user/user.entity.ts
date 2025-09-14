@@ -1,4 +1,5 @@
 // src/users/user.entity.ts
+import { Type } from 'class-transformer';
 import {
   Entity,
   PrimaryColumn,
@@ -27,11 +28,15 @@ status: 'active' | 'inactive';
   @Column({ nullable: true })
   fullName: string;
 
+  @Type(() => Number)
   @Column({ type: 'bigint', unsigned: true })
   phone: number;
 
   @Column()
   email: string;
+
+  @Column({ nullable: true, default: 18 })
+  age: number;
 
   @Column()
   password: string;
@@ -39,6 +44,7 @@ status: 'active' | 'inactive';
   @Column({ nullable: true })
   gender: string;
 
+  @Type(() => Number)
   @Column({ type: 'bigint', nullable: true })
   nid: number;
 

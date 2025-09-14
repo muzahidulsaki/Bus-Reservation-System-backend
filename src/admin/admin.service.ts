@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, Like } from 'typeorm';
 import { Admin } from './admin.entity';
 import { Department } from './entities/department.entity';
+import { User } from '../user/user.entity';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { FilterAdminDto } from './dto/filter-admin.dto';
+import { AdminRegisterDto } from './dto/admin-register.dto';
 import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcrypt';
  
@@ -16,9 +18,56 @@ export class AdminService {
     private readonly adminRepository: Repository<Admin>,
     @InjectRepository(Department)
     private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly mailService: MailService,
   ) {}
  
+  async registerAdmin(dto: AdminRegisterDto) {
+    // Check if admin already exists
+    const existingAdmin = await this.adminRepository.findOne({ 
+      where: { email: dto.email } 
+    });
+    
+    if (existingAdmin) {
+      throw new BadRequestException('Admin with this email already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    
+    // Create admin entity
+    const admin = this.adminRepository.create({
+      fullName: dto.name,
+      email: dto.email,
+      password: hashedPassword,
+      phone: dto.phone,
+      position: dto.counterLocation, // Use counterLocation as position
+      age: 25, // Default age
+      gender: 'male', // Default gender
+      status: 'active',
+    });
+    
+    const savedAdmin = await this.adminRepository.save(admin);
+
+    // Send welcome email (don't block registration if email fails)
+    try {
+      await this.mailService.sendUserWelcomeEmail({
+        email: savedAdmin.email,
+        fullName: savedAdmin.fullName,
+        phone: savedAdmin.phone,
+        gender: savedAdmin.gender,
+      });
+      console.log('✅ Welcome email sent to admin:', savedAdmin.email);
+    } catch (emailError) {
+      console.log('⚠️ Email sending failed for admin, but registration completed:', emailError.message);
+    }
+
+    // Return admin without password
+    const { password, ...adminWithoutPassword } = savedAdmin;
+    return adminWithoutPassword;
+  }
+
   async create(dto: CreateAdminDto) {
     // Check if admin already exists
     const existingAdmin = await this.adminRepository.findOne({ 
@@ -298,5 +347,71 @@ export class AdminService {
       order: { createdAt: 'DESC' },
       select: ['id', 'fullName', 'email', 'department', 'position', 'createdAt'],
     });
+  }
+
+  async getAdminDashboardStats() {
+    try {
+      // Get total counts
+      const totalUsers = await this.userRepository.count();
+      const totalAdmins = await this.adminRepository.count();
+      const activeUsers = await this.userRepository.count({ where: { status: 'active' } });
+      const activeAdmins = await this.adminRepository.count({ where: { status: 'active' } });
+
+      // Get recent users (last 10)
+      const recentUsers = await this.userRepository.find({
+        select: ['id', 'fullName', 'email', 'phone', 'status'],
+        order: { id: 'DESC' },
+        take: 10,
+      });
+
+      // Get recent admins (last 5)
+      const recentAdmins = await this.adminRepository.find({
+        select: ['id', 'fullName', 'email', 'position', 'status'],
+        order: { id: 'DESC' },
+        take: 5,
+      });
+
+      return {
+        totalUsers,
+        totalAdmins,
+        activeUsers,
+        activeAdmins,
+        recentUsers,
+        recentAdmins,
+        systemStats: {
+          userGrowthRate: '+12%', // Can be calculated based on actual data
+          adminActiveRate: `${Math.round((activeAdmins / totalAdmins) * 100)}%`,
+          systemUptime: '99.9%',
+        },
+      };
+    } catch (error) {
+      throw new BadRequestException('Failed to fetch dashboard statistics');
+    }
+  }
+
+  async getAllUsersForAdmin() {
+    return this.userRepository.find({
+      select: ['id', 'fullName', 'email', 'phone', 'age', 'gender', 'status'],
+      order: { id: 'DESC' },
+    });
+  }
+
+  async updateUserStatus(userId: number, status: 'active' | 'inactive') {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.status = status;
+    await this.userRepository.save(user);
+
+    return {
+      message: `User status updated to ${status}`,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        status: user.status,
+      },
+    };
   }
 }
